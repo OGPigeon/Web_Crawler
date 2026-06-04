@@ -13,6 +13,23 @@ An async, distributed web crawler built on **aiohttp** and **Redis**. Supports d
 - **Dependency injection** — plug in your own `relevancy_fn` and `storage_fn`
 - **PDF link extraction** — follows clickable hyperlinks in PDFs via pymupdf (optional)
 
+## Project Structure
+
+```
+webcrawler/           # Core package
+  __init__.py         # Public API re-exports
+  settings.py         # CrawlerConfig dataclass — all tuneable parameters
+  engine.py           # CrawlerPool — orchestrator (Redis setup, worker lifecycle)
+  worker.py           # CrawlWorker — per-coroutine fetch/parse/enqueue logic
+  url_filter.py       # BloomFilter — Redis bit-array deduplication
+  politeness.py       # RobotsCache — robots.txt fetching and enforcement
+  writers.py          # Storage helpers: JSONL, JSONL-with-HTML, InMemoryStorage
+
+examples/
+  python_docs.py      # Crawl docs.python.org, keep pages mentioning asyncio
+  arxiv.py            # Crawl arXiv listing pages, store abstract pages
+```
+
 ## Installation
 
 **Requirements:** Python 3.10+, Redis running locally (or any accessible Redis URL)
@@ -23,6 +40,7 @@ pip install -r requirements.txt
 # Optional — PDF link extraction
 pip install pymupdf
 ```
+
 
 ## Quick Start
 
@@ -84,23 +102,6 @@ storage_fn = store.save
 `bloom_persist=True` (the default) stores the bloom filter and queue in Redis. Stop with `Ctrl+C` at any time and re-run the same script — already-visited URLs are skipped.
 
 To start fresh, set `bloom_persist=False` for one run (clears the Redis bloom key and queue on startup).
-
-## Project Structure
-
-```
-webcrawler/           # Core package
-  __init__.py         # Public API re-exports
-  settings.py         # CrawlerConfig dataclass — all tuneable parameters
-  engine.py           # CrawlerPool — orchestrator (Redis setup, worker lifecycle)
-  worker.py           # CrawlWorker — per-coroutine fetch/parse/enqueue logic
-  url_filter.py       # BloomFilter — Redis bit-array deduplication
-  politeness.py       # RobotsCache — robots.txt fetching and enforcement
-  writers.py          # Storage helpers: JSONL, JSONL-with-HTML, InMemoryStorage
-
-examples/
-  python_docs.py      # Crawl docs.python.org, keep pages mentioning asyncio
-  arxiv.py            # Crawl arXiv listing pages, store abstract pages
-```
 
 ## License
 
