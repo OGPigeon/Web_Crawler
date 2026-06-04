@@ -58,24 +58,6 @@ pip install pymupdf
 
 ## Quick Start
 
-```python
-import asyncio
-from webcrawler import CrawlerConfig, CrawlerPool, make_jsonl_storage
-
-config = CrawlerConfig(
-    allowed_domains=["example.com"],
-    redis_url="redis://localhost:6379/0",
-    num_workers=4,
-    max_pages=500,
-    max_depth=3,
-    default_crawl_delay=1.0,
-    storage_fn=make_jsonl_storage("output.jsonl"),
-)
-
-pool = CrawlerPool(config=config, seed_urls=["https://example.com"])
-asyncio.run(pool.run())
-```
-
 Run one of the included examples:
 
 ```bash
