@@ -49,6 +49,30 @@ pip install pymupdf
 python examples/python_docs.py   # crawl docs.python.org, keep asyncio pages
 python examples/arxiv.py         # crawl arXiv listing pages, store abstracts
 ```
+## Storage Options
+
+Three built-in options in [webcrawler/writers.py](webcrawler/writers.py):
+
+```python
+from webcrawler import make_jsonl_storage, make_jsonl_storage_with_content, InMemoryStorage
+
+# Metadata only (URL, status, depth, content hash, timestamp)
+storage_fn = make_jsonl_storage("output.jsonl")
+
+# Metadata + raw HTML
+storage_fn = make_jsonl_storage_with_content("output_full.jsonl")
+
+# In-memory (for testing / small crawls)
+store = InMemoryStorage()
+storage_fn = store.save
+# After crawl: store.pages is a list of dicts
+```
+
+## Resuming a Crawl
+
+`bloom_persist=True` (the default) stores the bloom filter and queue in Redis. Stop with `Ctrl+C` at any time and re-run the same script — already-visited URLs are skipped.
+
+To start fresh, set `bloom_persist=False` for one run (clears the Redis bloom key and queue on startup).
 
 ## Configuration Reference
 
@@ -77,31 +101,6 @@ All options live in `CrawlerConfig` ([webcrawler/settings.py](webcrawler/setting
 | `verify_ssl` | `True` | Verify TLS certificates |
 | `relevancy_fn` | `None` | `fn(url, html_bytes, metadata) -> bool` |
 | `storage_fn` | `None` | `fn(url, html_bytes, metadata) -> None` |
-
-## Storage Options
-
-Three built-in options in [webcrawler/writers.py](webcrawler/writers.py):
-
-```python
-from webcrawler import make_jsonl_storage, make_jsonl_storage_with_content, InMemoryStorage
-
-# Metadata only (URL, status, depth, content hash, timestamp)
-storage_fn = make_jsonl_storage("output.jsonl")
-
-# Metadata + raw HTML
-storage_fn = make_jsonl_storage_with_content("output_full.jsonl")
-
-# In-memory (for testing / small crawls)
-store = InMemoryStorage()
-storage_fn = store.save
-# After crawl: store.pages is a list of dicts
-```
-
-## Resuming a Crawl
-
-`bloom_persist=True` (the default) stores the bloom filter and queue in Redis. Stop with `Ctrl+C` at any time and re-run the same script — already-visited URLs are skipped.
-
-To start fresh, set `bloom_persist=False` for one run (clears the Redis bloom key and queue on startup).
 
 ## License
 
