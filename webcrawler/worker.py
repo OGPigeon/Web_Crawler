@@ -297,7 +297,7 @@ class CrawlWorker:
 
     def _extract_links_pdf(self, pdf_bytes: bytes, base_url: str) -> list[str]:
         """
-        Extract embedded hyperlinks from a PDF using pymupdf.
+        Extract embedded hyperlinks from a PDF using pypdf.
         Returns normalised absolute http/https URLs, deduplicated.
         Only hyperlink annotations are used — no regex over raw text — so
         links must be explicitly clickable in the PDF to be discovered.
@@ -305,37 +305,41 @@ class CrawlWorker:
         if not pdf_bytes:
             return []
         try:
-            import fitz  # pymupdf
+            import io
+            import pypdf
         except ImportError:
             print(
-                f"[Worker {self.id}] pymupdf not installed — PDF links skipped. "
-                "Run: pip install pymupdf"
+                f"[Worker {self.id}] pypdf not installed — PDF links skipped. "
+                "Run: pip install pypdf"
             )
             return []
         try:
-            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
         except Exception as exc:
             print(f"[Worker {self.id}] PDF parse failed for {base_url}: {exc!r}")
             return []
 
         seen: set[str] = set()
         links: list[str] = []
-        try:
-            for page in doc:
-                for link in page.get_links():
-                    uri = link.get("uri", "")
-                    if not uri:
-                        continue
-                    absolute = urljoin(base_url, uri)
-                    parsed = urlparse(absolute)
-                    if parsed.scheme not in ("http", "https"):
-                        continue
-                    normalised = parsed._replace(fragment="").geturl()
-                    if normalised not in seen:
-                        seen.add(normalised)
-                        links.append(normalised)
-        finally:
-            doc.close()
+        for page in reader.pages:
+            for annot in page.get("/Annots", []):
+                obj = annot.get_object()
+                if obj.get("/Subtype") != "/Link":
+                    continue
+                action = obj.get("/A")
+                if not action or action.get("/S") != "/URI":
+                    continue
+                uri = action.get("/URI", "")
+                if not uri:
+                    continue
+                absolute = urljoin(base_url, uri)
+                parsed = urlparse(absolute)
+                if parsed.scheme not in ("http", "https"):
+                    continue
+                normalised = parsed._replace(fragment="").geturl()
+                if normalised not in seen:
+                    seen.add(normalised)
+                    links.append(normalised)
 
         return links
 
